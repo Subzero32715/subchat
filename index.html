@@ -1,318 +1,633 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Global Chat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUBchat</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{color-scheme:dark;--bg:#0b1020;--panel:#151d32;--panel2:#1d2942;--text:#edf3ff;--muted:#aab7d0;--accent:#7c9cff;--accent2:#a78bfa;--danger:#ff7b8b;--border:#2d3a56}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182444 0%,var(--bg) 60%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;min-height:100vh}
-button,input{font:inherit}button{border:0;border-radius:10px;padding:11px 15px;background:var(--accent);color:#071126;font-weight:750;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}input{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:10px;background:#0d1427;color:var(--text);outline:none}input:focus{border-color:var(--accent)}.muted{color:var(--muted)}.tiny{font-size:12px}.hidden{display:none!important}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px max(18px,calc((100vw - 1050px)/2));border-bottom:1px solid var(--border);background:#0b1020dd;position:sticky;top:0;z-index:2;backdrop-filter:blur(10px)}
-.brand{font-weight:900;font-size:20px;letter-spacing:-.5px;display:flex;align-items:center;gap:9px}.logo{display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#111827;border-radius:11px;width:34px;height:34px}
-main{width:min(1050px,100%);margin:0 auto;padding:28px 18px 50px}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 15px 40px #0002}
-.auth-wrap{max-width:460px;margin:35px auto}.tabs{display:flex;gap:8px;margin:18px 0}.tabs button{flex:1;background:var(--panel2);color:var(--muted)}.tabs button.active{background:var(--accent);color:#071126}
-label{display:block;font-size:13px;font-weight:700;margin:13px 0 6px}.stack{display:grid;gap:9px}.full{width:100%;margin-top:16px}.notice{padding:12px;border-radius:10px;background:#202e4a;color:#dbe6ff;font-size:13px;margin-top:14px}.status{font-size:12px;color:var(--muted)}.status:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#fbbf24;margin-right:7px}.status.ok:before{background:#4ade80}
-.chat-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px}.side h3{margin:0 0 12px}.room{padding:12px;border-radius:11px;background:var(--panel2);display:flex;gap:10px;align-items:center}.room-dot{width:9px;height:9px;background:#4ade80;border-radius:50%}.chat{display:flex;flex-direction:column;min-height:70vh;overflow:hidden;padding:0}.chat-head{padding:17px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}.chat-head h2{font-size:17px;margin:0}.messages{padding:20px;display:flex;flex-direction:column;gap:13px;flex:1;min-height:320px;max-height:58vh;overflow:auto}.empty{margin:auto;text-align:center;color:var(--muted);max-width:270px}.msg{max-width:85%;align-self:flex-start;background:var(--panel2);padding:10px 13px;border-radius:5px 14px 14px 14px;overflow-wrap:anywhere}.msg.mine{align-self:flex-end;background:#304578;border-radius:14px 5px 14px 14px}.msg-meta{font-size:11px;color:#c3cde1;margin-bottom:4px;display:flex;gap:9px}.msg-body{white-space:pre-wrap}.composer{display:flex;gap:9px;padding:15px;border-top:1px solid var(--border)}.composer input{flex:1;min-width:0}.composer button{min-width:80px}.banner{margin-bottom:17px;border:1px solid #765f29;background:#332a17;color:#ffedba;padding:13px 15px;border-radius:12px;font-size:13px}.footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
-@media(max-width:700px){.chat-layout{grid-template-columns:1fr}.side{display:none}.auth-wrap{margin:10px auto}.card{padding:17px}.messages{padding:14px;max-height:55vh}.chat{min-height:68vh}header{padding:13px 16px}}
+:root{--bg:#090d16;--panel:#111827;--panel2:#192337;--blue:#54b8ff;--text:#eef5ff;--muted:#9baac0;--border:#29364c;--red:#ff647c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:#06111d;font-weight:bold}
+button:hover{filter:brightness(1.1)}
+button:disabled{opacity:.5;cursor:not-allowed}
+input{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);padding:12px;border-radius:9px;outline:none}
+input:focus{border-color:var(--blue)}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.error{color:#ff8a9c}
+.success{color:#7ee6b0}
+#authScreen{min-height:100vh;display:grid;place-items:center;padding:20px}
+.auth-card{width:min(420px,100%);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:27px;box-shadow:0 20px 70px #0005}
+.logo{font-size:38px;font-weight:900;letter-spacing:-2px;color:var(--blue)}
+.logo span{color:white}
+.auth-card h2{margin:8px 0}
+.form{display:grid;gap:12px;margin-top:22px}
+#authMessage{min-height:20px;font-size:13px}
+#app{height:100vh;min-height:500px;display:flex;flex-direction:column}
+.topbar{height:62px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--border)}
+.topbar .logo{font-size:25px}
+.top-actions{display:flex;align-items:center;gap:10px}
+.top-actions button{padding:9px 12px}
+#layout{display:flex;flex:1;min-height:0}
+#sidebar{width:270px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:15px;display:flex;flex-direction:column;gap:13px;overflow-y:auto}
+.side-title{font-size:11px;letter-spacing:1.3px;color:var(--muted);font-weight:bold;margin:7px 0}
+.side-button{display:flex;align-items:center;gap:9px;text-align:left;width:100%;padding:11px;background:transparent;color:var(--text);font-weight:normal}
+.side-button:hover,.side-button.active{background:var(--panel2)}
+#serverList,#roomList{display:grid;gap:4px}
+#roomList{padding-left:8px}
+#main{flex:1;min-width:0;display:flex;flex-direction:column;background:radial-gradient(ellipse at top right,#15243b 0%,var(--bg) 65%)}
+#welcome{margin:auto;text-align:center;padding:25px;max-width:520px}
+#welcome h1{font-size:38px;margin-bottom:8px}
+#chatPanel{flex:1;min-height:0;display:flex;flex-direction:column}
+.chat-header{padding:17px 22px;border-bottom:1px solid var(--border);background:#11182799}
+.chat-header h2{margin:0 0 5px;font-size:21px}
+#messages{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.message{display:flex;gap:11px;align-items:flex-start;overflow-wrap:anywhere}
+.avatar{width:37px;height:37px;border-radius:12px;background:#203955;color:var(--blue);display:grid;place-items:center;flex-shrink:0;font-weight:bold}
+.msg-content{min-width:0;flex:1}
+.msg-meta{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;margin:1px 0 5px}
+.msg-name{font-weight:bold}
+.msg-time{font-size:11px;color:var(--muted)}
+.msg-body{white-space:pre-wrap;line-height:1.45}
+#composer{padding:14px 18px 18px;border-top:1px solid var(--border)}
+#composerForm{display:flex;gap:10px}
+#composerForm input{flex:1}
+#composer button{min-width:80px}
+#status{font-size:12px;color:var(--muted);margin-top:7px;min-height:14px}
+.modal-backdrop{position:fixed;inset:0;background:#000b;display:grid;place-items:center;padding:20px;z-index:5}
+.modal{width:min(430px,100%);padding:22px;border:1px solid var(--border);border-radius:16px;background:var(--panel)}
+.modal h2{margin-top:0}
+.modal form{display:grid;gap:12px}
+.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:5px}
+.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+#toast{position:fixed;bottom:18px;right:18px;background:var(--panel2);border:1px solid var(--border);padding:12px 16px;border-radius:10px;z-index:10;max-width:calc(100vw - 36px)}
+@media(max-width:650px){
+ #sidebar{width:145px;padding:9px}
+ .topbar{padding:0 10px}
+ .topbar .logo{font-size:21px}
+ .top-actions{gap:5px}
+ .top-actions button{padding:8px;font-size:12px}
+ #messages{padding:14px 10px}
+ .chat-header{padding:14px 12px}
+ #composer{padding:10px}
+ #composerForm{gap:6px}
+ #composer button{min-width:58px;padding:10px}
+ .auth-card{padding:21px}
+}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="logo">✦</span> Global Chat</div>
-  <div id="headerUser" class="muted tiny">Public chat for everyone</div>
-</header>
-<main>
-  <div class="banner"><strong>Setup required:</strong> This page is the complete front end, but online accounts and shared messages will not work until you connect a Supabase project and run the SQL setup below. Instructions are after the app in this file's setup guide.</div>
 
-  <section id="authView" class="auth-wrap card">
-    <h1 style="margin:0;font-size:27px">Talk to the world.</h1>
-    <p class="muted" style="margin:7px 0 0">Create an account or sign in to join the public room.</p>
-    <div class="tabs"><button id="signInTab" class="active" type="button">Sign in</button><button id="signUpTab" type="button">Create account</button></div>
-    <form id="authForm" class="stack">
-      <div id="usernameField" class="hidden"><label for="username">Username</label><input id="username" maxlength="24" autocomplete="nickname" placeholder="Choose a public username"></div>
-      <div><label for="email">Email</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-      <div><label for="password">Password</label><input id="password" type="password" minlength="6" autocomplete="current-password" required placeholder="At least 6 characters"></div>
-      <button id="authSubmit" class="full" type="submit">Sign in</button>
-    </form>
-    <div id="authStatus" class="notice" role="status">Demo preview: connect Supabase in the setup section to enable real accounts.</div>
-    <p class="tiny muted">Use an email you control. Never share your password with other users.</p>
-  </section>
+<section id="authScreen">
+ <div class="auth-card">
+  <div class="logo">SUB<span>chat</span></div>
+  <p class="muted">Your chats. Your community.</p>
+  <h2 id="authTitle">Welcome back</h2>
+  <p class="muted" id="authSubtitle">Sign in to continue to SUBchat.</p>
+  <form class="form" id="authForm">
+   <div id="usernameField" class="hidden">
+    <label for="username">Username</label>
+    <input id="username" maxlength="24" autocomplete="username" placeholder="Choose a username">
+   </div>
+   <div>
+    <label for="email">Email</label>
+    <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+   </div>
+   <div>
+    <label for="password">Password</label>
+    <input id="password" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters">
+   </div>
+   <button id="authSubmit" type="submit">Sign in</button>
+   <button id="toggleAuth" type="button" class="secondary">Create an account</button>
+   <div id="authMessage" role="status"></div>
+  </form>
+  <p class="muted small">Use a real email address and keep your password private.</p>
+ </div>
+</section>
 
-  <section id="chatView" class="chat-layout hidden">
-    <aside class="side card">
-      <h3>Chat rooms</h3>
-      <div class="room"><span class="room-dot"></span><div><strong># everyone</strong><div class="tiny muted">Public room</div></div></div>
-      <div style="height:20px"></div><h3>Your account</h3>
-      <div id="sideEmail" class="muted" style="overflow-wrap:anywhere"></div>
-      <button id="signOutBtn" type="button" style="margin-top:15px;background:#35415b;color:white;width:100%">Sign out</button>
-      <div class="notice">Be kind. Don't post private information, threats, or spam. Public messages can be read by anyone with access to this room.</div>
-    </aside>
-    <section class="chat card">
-      <div class="chat-head"><div><h2># everyone</h2><div id="connectionStatus" class="status">Not connected</div></div><button id="mobileSignOut" type="button" style="background:#35415b;color:white">Sign out</button></div>
-      <div id="messages" class="messages"><div class="empty"><div style="font-size:34px">💬</div><strong>Welcome to Global Chat</strong><p>Connect your backend to see and send shared messages.</p></div></div>
-      <form id="messageForm" class="composer"><input id="messageInput" maxlength="1000" placeholder="Write a message…" autocomplete="off" required><button id="sendBtn" type="submit">Send</button></form>
-    </section>
-  </section>
-  <div class="footer">Global Chat • Keep your personal information private.</div>
+<section id="app" class="hidden">
+ <header class="topbar">
+  <div class="logo">SUB<span>chat</span></div>
+  <div class="top-actions">
+   <span id="currentUser" class="muted small"></span>
+   <button id="newServerButton">＋ Server</button>
+   <button id="signOutButton" class="secondary">Log out</button>
+  </div>
+ </header>
 
-  <details style="margin-top:32px" class="card">
-    <summary style="font-weight:800;cursor:pointer">⚙ Setup guide — required to make this work online</summary>
-    <div style="margin-top:18px">
-      <h2 style="font-size:19px">1. Create a free Supabase project</h2>
-      <p>Open <a href="https://supabase.com/" target="_blank" rel="noopener" style="color:#a8c0ff">supabase.com</a>, create an account and a project. In your project, open <strong>Project Settings → API</strong> (or the Connect dialog) and copy the Project URL and the publishable/anon key.</p>
-      <h2 style="font-size:19px">2. Paste your public project settings into this file</h2>
-      <p>Near the bottom of this HTML, find <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code>. Replace the placeholder strings with your project's values. These browser values are public by design; never put a service-role key in this file.</p>
-      <h2 style="font-size:19px">3. Create the database tables and security rules</h2>
-      <p>In Supabase, open <strong>SQL Editor → New query</strong>, paste the SQL shown below, and click Run. It creates a profile table, a public messages table, and row-level security policies.</p>
-      <pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1020;padding:13px;border-radius:10px;font-size:12px">create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  username text not null unique check (char_length(username) between 2 and 24)
-);
+ <div id="layout">
+  <aside id="sidebar">
+   <button id="sidebarNewServer" style="width:100%">＋ Create a server</button>
+   <div>
+    <div class="side-title">YOUR SERVERS</div>
+    <div id="serverList"></div>
+   </div>
+   <div>
+    <div class="side-title">ROOMS</div>
+    <div id="roomList"><p class="muted small">Choose a server.</p></div>
+   </div>
+   <div style="margin-top:auto;border-top:1px solid var(--border);padding-top:12px">
+    <div class="side-title">ACCOUNT</div>
+    <div id="accountLabel" class="muted small"></div>
+   </div>
+  </aside>
 
-create table if not exists public.messages (
-  id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  username text not null,
-  body text not null check (char_length(body) between 1 and 1000),
-  created_at timestamptz not null default now()
-);
+  <main id="main">
+   <section id="welcome">
+    <div class="logo">SUB<span>chat</span></div>
+    <h1>Welcome!</h1>
+    <p class="muted">Choose a server on the left, or create your own server to start chatting.</p>
+    <button id="welcomeCreate">Create your first server</button>
+   </section>
 
-alter table public.profiles enable row level security;
-alter table public.messages enable row level security;
-
-create policy "Profiles readable by signed-in users"
-on public.profiles for select to authenticated using (true);
-
-create policy "Users can insert their own profile"
-on public.profiles for insert to authenticated
-with check (auth.uid() = id);
-
-create policy "Users can update their own profile"
-on public.profiles for update to authenticated
-using (auth.uid() = id) with check (auth.uid() = id);
-
-create policy "Signed-in users can read messages"
-on public.messages for select to authenticated using (true);
-
-create policy "Signed-in users can send messages as themselves"
-on public.messages for insert to authenticated
-with check (
-  auth.uid() = user_id
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.username = messages.username
-  )
-);
-
--- Turn on Realtime for the messages table.
-alter publication supabase_realtime add table public.messages;</pre>
-      <h2 style="font-size:19px">4. Host the HTML online</h2>
-      <p>Save this as <code>index.html</code> and publish it using a static host such as <a href="https://pages.github.com/" target="_blank" rel="noopener" style="color:#a8c0ff">GitHub Pages</a>. The HTML must be hosted on a web address for other people to use it. In Supabase Authentication settings, configure the site's URL and allowed redirect URLs to match your published site.</p>
-      <p><strong>Important:</strong> This starter is a public room, not private messaging. Add moderation, reporting, rate limits and stronger username validation before sharing widely. Configure Supabase email confirmation as desired. The starter requires email/password authentication.</p>
+   <section id="chatPanel" class="hidden">
+    <header class="chat-header">
+     <h2 id="roomHeading"># Chat</h2>
+     <div id="roomDescription" class="muted small">Messages from your community.</div>
+    </header>
+    <div id="messages" aria-live="polite"></div>
+    <div id="composer">
+     <form id="composerForm">
+      <input id="messageInput" maxlength="4000" placeholder="Write a message..." autocomplete="off" required>
+      <button type="submit" id="sendButton">Send</button>
+     </form>
+     <div id="status">Messages refresh automatically.</div>
     </div>
-  </details>
-</main>
+   </section>
+  </main>
+ </div>
+</section>
 
-<!-- Load Supabase's browser client from its official CDN. Internet access is required. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<div id="modalBackdrop" class="modal-backdrop hidden">
+ <div class="modal">
+  <h2 id="modalTitle">Create a server</h2>
+  <p class="muted" id="modalDescription">Give your new server a name.</p>
+  <form id="serverForm">
+   <label for="serverName">Server name</label>
+   <input id="serverName" required maxlength="60" placeholder="My community">
+   <div class="modal-actions">
+    <button id="cancelModal" type="button" class="secondary">Cancel</button>
+    <button id="createServerSubmit" type="submit">Create server</button>
+   </div>
+   <div id="serverMessage" class="small error"></div>
+  </form>
+ </div>
+</div>
+<div id="toast" class="hidden" role="status"></div>
+
 <script>
-/*
-  REQUIRED CONFIGURATION:
-  1) Create a project at https://supabase.com
-  2) Replace BOTH placeholder values below with your Project URL and publishable/anon key.
-  3) Run the SQL in the Setup guide above.
-  Never put a service_role key in a public HTML file.
-*/
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY_HERE";
+(() => {
+"use strict";
 
-let supabase = null;
-let mode = "signin";
-let currentUser = null;
-let currentProfile = null;
-let realtimeChannel = null;
-let seenIds = new Set();
+// 1. Replace this placeholder with your sb_publishable_... key.
+const SUPABASE_URL = "https://xayogkaixxmqegdmyuoz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+if (!window.supabase) {
+ document.body.innerHTML = "<p style='padding:24px;color:white'>Could not load the Supabase library. Check your internet connection and reload.</p>";
+ return;
+}
+if (SUPABASE_PUBLISHABLE_KEY === "YOUR_SUPABASE_PUBLISHABLE_KEY") {
+ document.getElementById("authMessage").textContent =
+  "Setup needed: paste your Supabase publishable key into index.html first.";
+ document.getElementById("authMessage").className = "error";
+}
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const $ = id => document.getElementById(id);
-const configured = () =>
-  window.supabase && SUPABASE_URL.startsWith("https://") &&
-  !SUPABASE_URL.includes("PASTE_YOUR") &&
-  SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("PASTE_YOUR");
+let user = null;
+let profile = null;
+let servers = [];
+let rooms = [];
+let activeServer = null;
+let activeRoom = null;
+let pollTimer = null;
+let loadingMessages = false;
+let knownMessageIds = new Set();
+let signupMode = false;
+let toastTimer = null;
 
-function authNotice(message, isError=false) {
-  $("authStatus").textContent = message;
-  $("authStatus").style.background = isError ? "#492631" : "#202e4a";
-  $("authStatus").style.color = isError ? "#ffd6dc" : "#dbe6ff";
+function showToast(message) {
+ const el = $("toast");
+ el.textContent = message;
+ el.classList.remove("hidden");
+ clearTimeout(toastTimer);
+ toastTimer = setTimeout(() => el.classList.add("hidden"), 3500);
 }
-function setMode(next) {
-  mode = next;
-  $("signInTab").classList.toggle("active", mode === "signin");
-  $("signUpTab").classList.toggle("active", mode === "signup");
-  $("usernameField").classList.toggle("hidden", mode !== "signup");
-  $("authSubmit").textContent = mode === "signin" ? "Sign in" : "Create account";
-  $("password").autocomplete = mode === "signin" ? "current-password" : "new-password";
-  authNotice(configured() ? (mode === "signin" ? "Sign in with your account." : "Choose a username others will see.") : "Not connected yet: add your Supabase URL/key and run the SQL setup below.", !configured());
+function setStatus(message, error = false) {
+ $("status").textContent = message;
+ $("status").style.color = error ? "#ff8a9c" : "";
 }
-$("signInTab").addEventListener("click", () => setMode("signin"));
-$("signUpTab").addEventListener("click", () => setMode("signup"));
-
+function escapeInitial(name) {
+ return (name || "?").trim().charAt(0).toUpperCase() || "?";
+}
+function prettyError(error) {
+ const message = error?.message || "Something went wrong.";
+ if (/invalid login credentials/i.test(message)) return "Email or password is incorrect.";
+ if (/user already registered/i.test(message)) return "That email already has an account. Try signing in.";
+ if (/duplicate key|profiles_username_key/i.test(message)) return "That username is already taken. Try another one.";
+ if (/row-level security|permission denied/i.test(message)) return "Supabase blocked that action. Check the database policies and SQL setup.";
+ if (/failed to fetch/i.test(message)) return "Could not reach Supabase. Check your internet connection and project URL.";
+ return message;
+}
+function showAuthMessage(message, error = false) {
+ $("authMessage").textContent = message;
+ $("authMessage").className = error ? "error" : "success";
+}
 function showAuth() {
-  $("authView").classList.remove("hidden");
-  $("chatView").classList.add("hidden");
-  $("headerUser").textContent = "Public chat for everyone";
+ $("authScreen").classList.remove("hidden");
+ $("app").classList.add("hidden");
+ stopPolling();
 }
-function showChat() {
-  $("authView").classList.add("hidden");
-  $("chatView").classList.remove("hidden");
-  $("headerUser").textContent = currentProfile.username;
-  $("sideEmail").textContent = currentUser.email || currentProfile.username;
+function showApp() {
+ $("authScreen").classList.add("hidden");
+ $("app").classList.remove("hidden");
+ $("currentUser").textContent = profile?.username ? "@" + profile.username : user?.email || "";
+ $("accountLabel").textContent = profile?.username ? "@" + profile.username : user?.email || "";
 }
-function cleanText(s) { return String(s ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ""); }
+function stopPolling() {
+ if (pollTimer) clearInterval(pollTimer);
+ pollTimer = null;
+}
+function startPolling() {
+ stopPolling();
+ pollTimer = setInterval(() => {
+  if (user && activeRoom) loadMessages(false);
+ }, 3000);
+}
+function openServerModal() {
+ $("serverName").value = "";
+ $("serverMessage").textContent = "";
+ $("modalBackdrop").classList.remove("hidden");
+ setTimeout(() => $("serverName").focus(), 30);
+}
+function closeServerModal() {
+ $("modalBackdrop").classList.add("hidden");
+}
+function resetChatView() {
+ stopPolling();
+ activeServer = null;
+ activeRoom = null;
+ rooms = [];
+ knownMessageIds.clear();
+ $("serverList").replaceChildren();
+ $("roomList").innerHTML = '<p class="muted small">Choose a server.</p>';
+ $("messages").replaceChildren();
+ $("chatPanel").classList.add("hidden");
+ $("welcome").classList.remove("hidden");
+}
 
-async function connect() {
-  if (!configured()) {
-    setMode("signin");
-    authNotice("Backend not configured. Follow the Setup guide at the bottom of this page.", true);
-    return;
-  }
-  if (!supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data, error } = await supabase.auth.getSession();
-  if (error) { authNotice(error.message, true); return; }
-  if (data.session) await enterChat(data.session.user);
+async function loadProfile() {
+ const { data, error } = await db.from("profiles")
+  .select("id,username,display_name,avatar_url")
+  .eq("id", user.id)
+  .maybeSingle();
+ if (error) throw error;
+ profile = data;
+ if (!profile) {
+  profile = {
+   id: user.id,
+   username: (user.email || "user").split("@")[0],
+   display_name: null
+  };
+ }
 }
-async function enterChat(user) {
-  currentUser = user;
-  const { data: profile, error } = await supabase.from("profiles").select("id, username").eq("id", user.id).maybeSingle();
-  if (error) { authNotice("Could not load profile: " + error.message, true); showAuth(); return; }
-  if (!profile) {
-    authNotice("No username profile found. Sign out, then create an account again.", true);
-    showAuth(); return;
-  }
-  currentProfile = profile;
-  showChat();
-  await loadMessages();
-  subscribeToMessages();
+
+async function loadServers() {
+ const { data, error } = await db.from("servers")
+  .select("id,name,owner_id,created_at")
+  .order("created_at", { ascending: true });
+ if (error) throw error;
+ servers = data || [];
+ renderServers();
+ if (activeServer && !servers.some(s => s.id === activeServer.id)) {
+  activeServer = null;
+  activeRoom = null;
+ }
+ if (!activeServer && servers.length) {
+  await selectServer(servers[0].id);
+ } else if (activeServer) {
+  renderServers();
+ }
 }
-$("authForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!configured()) { authNotice("Setup required: add your Supabase URL/key and run the SQL in the guide below.", true); return; }
-  if (!supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const email = $("email").value.trim();
-  const password = $("password").value;
-  $("authSubmit").disabled = true;
-  try {
-    if (mode === "signup") {
-      const username = cleanText($("username").value.trim());
-      if (!/^[a-zA-Z0-9_ -]{2,24}$/.test(username)) {
-        authNotice("Username must be 2–24 characters and use letters, numbers, spaces, _ or -.", true); return;
-      }
-      const { data, error } = await supabase.auth.signUp({email, password});
-      if (error) throw error;
-      if (!data.user) throw new Error("Account could not be created.");
-      if (!data.session) {
-        authNotice("Account created! Check your email to confirm it, then sign in. If confirmation is enabled, this is expected.");
-        return;
-      }
-      const { error: pError } = await supabase.from("profiles").insert({id:data.user.id, username});
-      if (pError) throw new Error("Account exists, but profile creation failed: " + pError.message + ". If email confirmation is enabled, confirm your email then contact the site owner to finish profile setup, or temporarily disable confirmation while testing.");
-      authNotice("Account created. Welcome!");
-      await enterChat(data.user);
-    } else {
-      const { data, error } = await supabase.auth.signInWithPassword({email, password});
-      if (error) throw error;
-      await enterChat(data.user);
-    }
-  } catch (err) {
-    authNotice(err.message || "Something went wrong.", true);
-  } finally { $("authSubmit").disabled = false; }
+function renderServers() {
+ const list = $("serverList");
+ list.replaceChildren();
+ if (!servers.length) {
+  const p = document.createElement("p");
+  p.className = "muted small";
+  p.textContent = "No servers yet.";
+  list.appendChild(p);
+  return;
+ }
+ servers.forEach(server => {
+  const button = document.createElement("button");
+  button.className = "side-button" + (activeServer?.id === server.id ? " active" : "");
+  button.textContent = "▣  " + server.name;
+  button.title = server.name;
+  button.onclick = () => selectServer(server.id).catch(e => showToast(prettyError(e)));
+  list.appendChild(button);
+ });
+}
+
+async function selectServer(serverId) {
+ const chosen = servers.find(s => s.id === serverId);
+ if (!chosen) return;
+ stopPolling();
+ activeServer = chosen;
+ activeRoom = null;
+ knownMessageIds.clear();
+ $("messages").replaceChildren();
+ $("welcome").classList.add("hidden");
+ $("chatPanel").classList.remove("hidden");
+ $("roomHeading").textContent = chosen.name;
+ $("roomDescription").textContent = "Loading rooms…";
+ $("roomList").replaceChildren();
+ renderServers();
+
+ const { data, error } = await db.from("rooms")
+  .select("id,server_id,name,room_type,owner_only,send_mode,created_at")
+  .eq("server_id", chosen.id)
+  .order("created_at", { ascending: true });
+ if (error) throw error;
+ rooms = data || [];
+ renderRooms();
+
+ if (!rooms.length) {
+  $("roomDescription").textContent = "This server has no rooms yet.";
+  $("messages").innerHTML = '<p class="muted">No rooms are available. The server setup trigger may not have created the default rooms.</p>';
+  return;
+ }
+ const preferred = rooms.find(r => r.name.toLowerCase() === "chat" && !r.owner_only)
+  || rooms.find(r => !r.owner_only)
+  || rooms[0];
+ await selectRoom(preferred.id);
+}
+function renderRooms() {
+ const list = $("roomList");
+ list.replaceChildren();
+ rooms.forEach(room => {
+  const button = document.createElement("button");
+  button.className = "side-button" + (activeRoom?.id === room.id ? " active" : "");
+  button.textContent = (room.owner_only ? "🔒 " : "# ") + room.name;
+  button.title = room.owner_only ? "Owner-only room" : room.name;
+  button.onclick = () => selectRoom(room.id).catch(e => showToast(prettyError(e)));
+  list.appendChild(button);
+ });
+}
+
+async function selectRoom(roomId) {
+ const chosen = rooms.find(r => r.id === roomId);
+ if (!chosen) return;
+ activeRoom = chosen;
+ knownMessageIds.clear();
+ $("messages").replaceChildren();
+ $("roomHeading").textContent = (chosen.owner_only ? "🔒 " : "# ") + chosen.name;
+ $("roomDescription").textContent = activeServer.name;
+ $("messageInput").disabled = false;
+ $("sendButton").disabled = false;
+ renderRooms();
+ await loadMessages(true);
+ startPolling();
+}
+
+async function loadMessages(initial) {
+ if (!activeRoom || loadingMessages || !user) return;
+ loadingMessages = true;
+ if (initial) setStatus("Loading messages…");
+ try {
+  const { data, error } = await db.from("messages")
+   .select("id,room_id,user_id,body,created_at")
+   .eq("room_id", activeRoom.id)
+   .order("created_at", { ascending: true })
+   .limit(150);
+  if (error) throw error;
+
+  const rows = data || [];
+  const missing = [...new Set(rows.map(m => m.user_id).filter(Boolean))];
+  let names = {};
+  if (missing.length) {
+   const { data: people, error: profileError } = await db.from("profiles")
+    .select("id,username,display_name")
+    .in("id", missing);
+   if (profileError) throw profileError;
+   (people || []).forEach(p => names[p.id] = p.display_name || p.username || "User");
+  }
+
+  if (initial) {
+   $("messages").replaceChildren();
+   knownMessageIds.clear();
+  }
+  const newRows = rows.filter(m => !knownMessageIds.has(m.id));
+  newRows.forEach(m => {
+   knownMessageIds.add(m.id);
+   appendMessage(m, names[m.user_id] || (m.user_id === user.id ? profile?.username : "User") || "User");
+  });
+  if (initial || newRows.length) $("messages").scrollTop = $("messages").scrollHeight;
+  setStatus("Messages refresh automatically.");
+ } catch (error) {
+  setStatus(prettyError(error), true);
+ } finally {
+  loadingMessages = false;
+ }
+}
+
+function appendMessage(message, username) {
+ const wrapper = document.createElement("article");
+ wrapper.className = "message";
+ const avatar = document.createElement("div");
+ avatar.className = "avatar";
+ avatar.textContent = escapeInitial(username);
+ const content = document.createElement("div");
+ content.className = "msg-content";
+ const meta = document.createElement("div");
+ meta.className = "msg-meta";
+ const name = document.createElement("span");
+ name.className = "msg-name";
+ name.textContent = username;
+ if (message.user_id === user.id) name.style.color = "var(--blue)";
+ const time = document.createElement("span");
+ time.className = "msg-time";
+ const date = new Date(message.created_at);
+ time.textContent = Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+ const body = document.createElement("div");
+ body.className = "msg-body";
+ body.textContent = message.body || "";
+ meta.append(name, time);
+ content.append(meta, body);
+ wrapper.append(avatar, content);
+ $("messages").appendChild(wrapper);
+}
+
+async function createServer(name) {
+ const cleaned = name.trim();
+ if (!cleaned) throw new Error("Enter a server name.");
+ const { data, error } = await db.from("servers")
+  .insert({ name: cleaned, owner_id: user.id })
+  .select("id,name,owner_id,created_at")
+  .single();
+ if (error) throw error;
+ await loadServers();
+ const created = servers.find(s => s.id === data.id) || data;
+ await selectServer(created.id);
+ return created;
+}
+
+$("toggleAuth").addEventListener("click", () => {
+ signupMode = !signupMode;
+ $("usernameField").classList.toggle("hidden", !signupMode);
+ $("username").required = signupMode;
+ $("authTitle").textContent = signupMode ? "Create your account" : "Welcome back";
+ $("authSubtitle").textContent = signupMode ? "Choose a username and password." : "Sign in to continue to SUBchat.";
+ $("authSubmit").textContent = signupMode ? "Create account" : "Sign in";
+ $("toggleAuth").textContent = signupMode ? "I already have an account" : "Create an account";
+ $("password").autocomplete = signupMode ? "new-password" : "current-password";
+ showAuthMessage("");
 });
 
-async function loadMessages() {
-  $("messages").replaceChildren();
-  seenIds.clear();
-  $("connectionStatus").textContent = "Loading messages…";
-  const { data, error } = await supabase.from("messages").select("id, user_id, username, body, created_at").order("created_at", {ascending:true}).limit(100);
-  if (error) {
-    $("connectionStatus").textContent = "Could not load messages";
-    addSystemMessage("Could not load messages: " + error.message);
+$("authForm").addEventListener("submit", async event => {
+ event.preventDefault();
+ if (SUPABASE_PUBLISHABLE_KEY === "YOUR_SUPABASE_PUBLISHABLE_KEY") {
+  showAuthMessage("Open index.html and replace YOUR_SUPABASE_PUBLISHABLE_KEY with your publishable key.", true);
+  return;
+ }
+ const email = $("email").value.trim();
+ const password = $("password").value;
+ const username = $("username").value.trim().toLowerCase();
+ const submit = $("authSubmit");
+ submit.disabled = true;
+ showAuthMessage(signupMode ? "Creating account…" : "Signing in…");
+ try {
+  if (signupMode) {
+   if (!/^[a-z0-9_]{3,24}$/.test(username)) {
+    throw new Error("Username must be 3–24 characters using letters, numbers, or underscores.");
+   }
+   const { data, error } = await db.auth.signUp({
+    email,
+    password,
+    options: { data: { username, display_name: username } }
+   });
+   if (error) throw error;
+   if (!data.session) {
+    showAuthMessage("Account created! Check your email to confirm it, then sign in.");
+    signupMode = false;
+    $("toggleAuth").click();
     return;
+   }
+   user = data.user;
+  } else {
+   const { data, error } = await db.auth.signInWithPassword({ email, password });
+   if (error) throw error;
+   user = data.user;
   }
-  if (!data.length) showEmpty();
-  for (const m of data) renderMessage(m);
-  $("connectionStatus").textContent = "Connected";
-  $("connectionStatus").classList.add("ok");
-}
-function showEmpty() {
-  const el = document.createElement("div");
-  el.className = "empty"; el.id = "emptyState";
-  el.innerHTML = '<div style="font-size:34px">💬</div><strong>No messages yet</strong><p>Say hello and start the conversation.</p>';
-  $("messages").appendChild(el);
-}
-function addSystemMessage(text) {
-  const el = document.createElement("div"); el.className = "empty"; el.textContent = text; $("messages").appendChild(el);
-}
-function renderMessage(m) {
-  if (seenIds.has(m.id)) return;
-  seenIds.add(m.id);
-  const empty = $("emptyState"); if (empty) empty.remove();
-  const el = document.createElement("article");
-  el.className = "msg" + (m.user_id === currentUser.id ? " mine" : "");
-  const meta = document.createElement("div"); meta.className = "msg-meta";
-  const name = document.createElement("strong"); name.textContent = m.username;
-  const time = document.createElement("span");
-  const d = new Date(m.created_at);
-  time.textContent = Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
-  meta.append(name,time);
-  const body = document.createElement("div"); body.className = "msg-body"; body.textContent = m.body;
-  el.append(meta,body); $("messages").appendChild(el);
-  $("messages").scrollTop = $("messages").scrollHeight;
-}
-function subscribeToMessages() {
-  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-  $("connectionStatus").textContent = "Connecting to live chat…";
-  realtimeChannel = supabase.channel("public-chat-messages")
-    .on("postgres_changes", {event:"INSERT", schema:"public", table:"messages"}, payload => renderMessage(payload.new))
-    .subscribe(status => {
-      if (status === "SUBSCRIBED") {
-        $("connectionStatus").textContent = "Live • Connected";
-        $("connectionStatus").classList.add("ok");
-      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        $("connectionStatus").textContent = "Live connection issue";
-        $("connectionStatus").classList.remove("ok");
-      }
-    });
-}
-async function signOut() {
-  if (realtimeChannel && supabase) { await supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
-  if (supabase) await supabase.auth.signOut();
-  currentUser = null; currentProfile = null; seenIds.clear(); showAuth();
-}
-$("signOutBtn").addEventListener("click", signOut);
-$("mobileSignOut").addEventListener("click", signOut);
-$("messageForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!supabase || !currentUser || !currentProfile) return;
-  const body = cleanText($("messageInput").value.trim());
-  if (!body || body.length > 1000) return;
-  $("sendBtn").disabled = true;
-  try {
-    const { error } = await supabase.from("messages").insert({
-      user_id: currentUser.id, username: currentProfile.username, body
-    });
-    if (error) throw error;
-    $("messageInput").value = "";
-  } catch (err) {
-    alert("Message could not be sent: " + err.message);
-  } finally { $("sendBtn").disabled = false; $("messageInput").focus(); }
+  await boot();
+ } catch (error) {
+  showAuthMessage(prettyError(error), true);
+ } finally {
+  submit.disabled = false;
+ }
+});
+
+async function boot() {
+ if (!user) return;
+ try {
+  await loadProfile();
+  showApp();
+  await loadServers();
+  if (!servers.length) {
+   $("welcome").classList.remove("hidden");
+   $("chatPanel").classList.add("hidden");
+  }
+ } catch (error) {
+  showToast("Could not load SUBchat: " + prettyError(error));
+ }
 }
 
-if (!configured()) {
-  setMode("signin");
-} else {
-  connect().catch(err => authNotice(err.message || "Could not connect to backend.", true));
-}
+$("signOutButton").addEventListener("click", async () => {
+ stopPolling();
+ const { error } = await db.auth.signOut();
+ if (error) showToast(prettyError(error));
+ user = null;
+ profile = null;
+ servers = [];
+ resetChatView();
+ showAuth();
+});
+
+$("newServerButton").addEventListener("click", openServerModal);
+$("sidebarNewServer").addEventListener("click", openServerModal);
+$("welcomeCreate").addEventListener("click", openServerModal);
+$("cancelModal").addEventListener("click", closeServerModal);
+$("modalBackdrop").addEventListener("click", e => {
+ if (e.target === $("modalBackdrop")) closeServerModal();
+});
+
+$("serverForm").addEventListener("submit", async event => {
+ event.preventDefault();
+ const button = $("createServerSubmit");
+ button.disabled = true;
+ $("serverMessage").textContent = "Creating server…";
+ try {
+  const server = await createServer($("serverName").value);
+  closeServerModal();
+  showToast("Created " + server.name + "!");
+ } catch (error) {
+  $("serverMessage").textContent = prettyError(error);
+ } finally {
+  button.disabled = false;
+ }
+});
+
+$("composerForm").addEventListener("submit", async event => {
+ event.preventDefault();
+ if (!user || !activeRoom) return;
+ const input = $("messageInput");
+ const body = input.value.trim();
+ if (!body) return;
+ const button = $("sendButton");
+ button.disabled = true;
+ try {
+  const { error } = await db.from("messages").insert({
+   room_id: activeRoom.id,
+   user_id: user.id,
+   body
+  });
+  if (error) throw error;
+  input.value = "";
+  await loadMessages(false);
+ } catch (error) {
+  setStatus(prettyError(error), true);
+ } finally {
+  button.disabled = false;
+  input.focus();
+ }
+});
+
+// Restore the signed-in session after a reload.
+db.auth.getSession().then(async ({ data, error }) => {
+ if (error) {
+  showAuthMessage(prettyError(error), true);
+  return;
+ }
+ user = data.session?.user || null;
+ if (user) await boot();
+}).catch(error => showAuthMessage(prettyError(error), true));
+
+db.auth.onAuthStateChange((event, session) => {
+ if (event === "SIGNED_OUT") {
+  user = null;
+  profile = null;
+  resetChatView();
+  showAuth();
+ }
+});
+})();
 </script>
 </body>
 </html>
